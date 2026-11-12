@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>德州扑克起手牌牌力表</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #141a22;
+    --panel: #1a212b;
+    --panel2: #202a36;
+    --border: #2d3846;
+    --text: #e6edf3;
+    --muted: #8b98a8;
+    --accent: #3fb950;
+    --accent2: #38bdf8;
+    --premium: #dc2626;
+    --strong: #ea580c;
+    --good: #d97706;
+    --playable: #16a34a;
+    --weak: #5b6470;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -200px, #16301f 0%, transparent 60%),
+      radial-gradient(900px 500px at 90% 110%, #0f2233 0%, transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 48px; }
+
+  header { text-align: center; padding: 12px 0 18px; }
+  header h1 { margin: 0; font-size: clamp(22px, 4.5vw, 34px); font-weight: 800; letter-spacing: .5px; }
+  header h1 .suits { color: var(--accent); letter-spacing: 3px; margin-left: 8px; }
+  header .sub { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  /* ---- controls ---- */
+  .controls {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin: 0 auto 18px;
+    max-width: 820px;
+  }
+  .controls .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .controls .row + .row { margin-top: 10px; }
+  .row-label { color: var(--muted); font-size: 13px; font-weight: 700; min-width: 62px; flex: none; }
+  .chips-inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  .search { flex: 1 1 220px; display: flex; align-items: center; gap: 8px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
+  .search .icon { color: var(--muted); }
+  .search input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 15px; min-width: 0; }
+  .search input::placeholder { color: var(--muted); }
+
+  .chip {
+    border: 1px solid var(--border); background: var(--bg2); color: var(--muted);
+    padding: 7px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+    transition: all .15s; user-select: none; white-space: nowrap;
+  }
+  .chip:hover { color: var(--text); border-color: #4a5868; }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #06230c; font-weight: 700; }
+  .chip.ghost { color: var(--text); }
+  .chip.ghost:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .range-info { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+  .range-info b { color: var(--text); }
+
+  /* ---- layout ---- */
+  .layout { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: start; }
+  @media (min-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 660px) minmax(300px, 1fr); }
+    .details { position: sticky; top: 16px; }
+  }
+
+  /* ---- board ---- */
+  .board { max-width: 660px; margin: 0 auto; width: 100%; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1.4em repeat(13, minmax(0, 1fr));
+    grid-auto-rows: auto;
+    gap: 3px;
+    user-select: none;
+  }
+  .lbl { display: flex; align-items: center; justify-content: center; color: var(--muted); font-weight: 700; font-size: 11px; }
+  .lbl.row { padding-right: 2px; }
+  .lbl.col { padding-bottom: 2px; }
+
+  .cell {
+    --c: #333;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    background-color: var(--c);
+    background-image: linear-gradient(180deg, rgba(255,255,255,.14), rgba(0,0,0,.18));
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    position: relative;
+    font-weight: 800;
+    text-shadow: 0 1px 2px rgba(0,0,0,.45);
+    transition: transform .1s, filter .15s, opacity .15s;
+  }
+  .cell:hover { transform: scale(1.1); z-index: 3; }
+  .cell:active { transform: scale(1.02); }
+  .cell .rl { display: flex; align-items: flex-start; font-size: clamp(9px, 2.3vw, 15px); letter-spacing: -.5px; line-height: 1; }
+  .cell .sx { font-size: .55em; opacity: .85; font-weight: 700; margin-left: 1px; }
+  .cell .score { font-size: clamp(6px, 1.1vw, 9px); opacity: .88; line-height: 1; font-weight: 700; }
+
+  .cell.dim { opacity: .45; filter: grayscale(.6) brightness(.8); }
+  .cell.fade { opacity: .3; filter: grayscale(.5); }
+  .cell.match { outline: 2px solid var(--accent2); outline-offset: 0; box-shadow: 0 0 10px rgba(56,189,248,.55); z-index: 2; }
+  .cell.selected { outline: 2px solid #fff; outline-offset: 0; box-shadow: 0 0 12px rgba(255,255,255,.5); z-index: 4; }
+
+  /* ---- legend ---- */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; justify-content: center; }
+  .lg {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 11px; font-size: 12px; color: var(--muted);
+  }
+  .lg .sw { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+  .lg b { color: var(--text); font-weight: 700; margin-right: 2px; }
+  .lg .n { color: var(--muted); opacity: .8; }
+
+  /* ---- details ---- */
+  .details { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+
+  .bp-title { font-weight: 800; font-size: 15px; }
+  .bp-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .bp-slots { display: flex; gap: 6px; justify-content: center; margin: 12px 0; flex-wrap: wrap; }
+  .bp-slot {
+    width: 52px; height: 70px; border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; line-height: 1; flex: none;
+    background: var(--bg2); border: 1px dashed var(--border);
+  }
+  .bp-slot .q { font-size: 22px; color: var(--muted); }
+  .bp-slot .pr { font-size: 20px; font-weight: 800; }
+  .bp-slot .ps { font-size: 17px; }
+  .bp-slot.filled { background: #fff; border-style: solid; }
+  .bp-slot.filled.red { color: #c62828; }
+  .bp-slot.filled.black { color: #111; }
+  .bp-slot .sl { position: absolute; bottom: 2px; font-size: 8px; color: var(--muted); }
+  .bp-slot.filled .sl { color: #888; }
+
+  .bp-picker { display: grid; grid-template-columns: 1em repeat(13, minmax(0, 1fr)); gap: 3px; margin-top: 12px; }
+  .bp-suit { display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: var(--muted); }
+  .bp-suit.red { color: #ef5350; }
+  .bp-card {
+    aspect-ratio: 1 / 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; cursor: pointer; line-height: 1;
+  }
+  .bp-card .pr { font-size: clamp(9px, 1.6vw, 13px); font-weight: 800; }
+  .bp-card .ps { font-size: clamp(8px, 1.4vw, 12px); }
+  .bp-card.red { color: #ef5350; }
+  .bp-card.black { color: #e6edf3; }
+  .bp-card:hover { border-color: var(--accent2); }
+  .bp-card.used { opacity: .22; pointer-events: none; }
+
+  .bp-actions { text-align: center; margin-top: 10px; }
+
+  .hand-detail { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .details .placeholder { color: var(--muted); text-align: center; padding: 26px 12px; font-size: 13.5px; }
+  .details .placeholder .big { font-size: 28px; display: block; margin-bottom: 8px; opacity: .6; }
+
+  .d-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .d-cards { display: flex; gap: 6px; }
+  .card {
+    width: 46px; height: 62px; background: #fff; color: #111; border-radius: 7px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 3px 8px rgba(0,0,0,.4); font-weight: 800; line-height: 1;
+  }
+  .card .cr { font-size: 19px; }
+  .card .cs { font-size: 17px; }
+  .card.red { color: #c62828; }
+  .card.black { color: #111; }
+
+  .d-title h2 { margin: 0; font-size: 19px; }
+  .d-title .key { color: var(--muted); font-size: 12.5px; }
+
+  .d-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 8px; }
+  .stat { flex: 1 1 110px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; }
+  .stat .k { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .stat .v { font-size: 17px; font-weight: 800; margin-top: 2px; }
+  .stat .v.small { font-size: 13px; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 800; color: #fff; }
+
+  .d-board { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+  .d-board .s-title { font-size: 11px; color: var(--muted); }
+  .d-board-name { font-size: 17px; font-weight: 800; margin-top: 2px; }
+
+  .d-situation { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+  .d-situation .s-title { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .d-situation .s-head { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .s-chip { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+  .s-chip.on { background: var(--accent); color: #06230c; }
+  .s-chip.off { background: var(--border); color: var(--muted); }
+
+  .d-tip { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--text); }
+  .d-tip .nick { color: var(--accent2); font-weight: 700; display: block; margin-bottom: 4px; }
+
+  .d-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--border); background: var(--bg2); color: var(--text); padding: 9px 14px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all .15s; }
+  .btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #06230c; font-weight: 700; }
+  .btn.primary:hover { filter: brightness(1.08); color: #06230c; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; }
+  footer a { color: var(--accent2); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>德州扑克起手牌牌力表<span class="suits">♠♥♦♣</span></h1>
+    <div class="sub">169 种起手牌 · 格子内数字为陈氏（Chen）牌力评分 · 选人数 + 位置看开池范围 · 右侧选公共牌后，牌表按成牌强度高亮 · T = 10，s = 同花，o = 不同花</div>
+  </header>
+
+  <div class="controls">
+    <div class="row">
+      <div class="search">
+        <span class="icon">🔍</span>
+        <input id="search" type="text" placeholder="搜索起手牌，如 AK / AA / A5s / 72o…" autocomplete="off">
+      </div>
+      <button class="chip ghost" id="btn-random" type="button">🎲 随机手牌</button>
+      <button class="chip ghost" id="btn-reset" type="button">重置</button>
+    </div>
+    <div class="row">
+      <span class="row-label">玩家人数</span>
+      <div class="chips-inline" id="players-row">
+        <button class="chip" data-players="2" type="button">2 人单挑</button>
+        <button class="chip" data-players="3" type="button">3 人桌</button>
+        <button class="chip active" data-players="6" type="button">6 人桌</button>
+        <button class="chip" data-players="9" type="button">9 人满桌</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="row-label">我的位置</span>
+      <div class="chips-inline" id="pos-row"></div>
+    </div>
+    <div class="range-info" id="range-info"></div>
+  </div>
+
+  <div class="layout">
+    <section class="board">
+      <div class="grid" id="grid"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <aside class="details" id="details">
+      <div class="board-pick">
+        <div class="bp-title">🃏 公共牌</div>
+        <div class="bp-sub">点下面牌选入公共牌（翻牌 3 张、转牌 1 张、河牌 1 张）。选满 3 张后，牌表会按「起手牌 + 公共牌」的成牌强度重新高亮。点已选中的槽位可取消。</div>
+        <div class="bp-slots" id="bp-slots"></div>
+        <div class="bp-picker" id="bp-picker"></div>
+        <div class="bp-actions"><button class="btn ghost" id="btn-clear-board" type="button">清空公共牌</button></div>
+      </div>
+      <div class="hand-detail" id="hand-detail">
+        <div class="placeholder"><span class="big">🂠</span>点击牌表任意格子查看详情。</div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    牌力分级依据陈氏（Chen）起手牌评分公式；各位置开池范围为常见简化示例（非精确 GTO）。<br>
+    仅供学习参考，不构成任何赌博建议 · 公式来源 <a href="https://www.thepokerbank.com/strategy/basic/starting-hand-selection/chen-formula/" target="_blank" rel="noopener">ThePokerBank - Chen Formula</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+  const SUIT_CHARS = ['♠', '♥', '♦', '♣'];
+  const VAL = { A: 10, K: 8, Q: 7, J: 6, T: 5, '9': 4.5, '8': 4, '7': 3.5, '6': 3, '5': 2.5, '4': 2, '3': 1.5, '2': 1 };
+  const RANK_VAL = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'T':10,'J':11,'Q':12,'K':13,'A':14 };
+
+  // 陈氏（Chen）公式
+  function chenScore(r1, r2, suited) {
+    if (r1 === r2) return Math.max(Math.round(2 * VAL[RANKS[r1]]), 5);
+    const hi = Math.min(r1, r2), lo = Math.max(r1, r2);
+    let score = VAL[RANKS[hi]];
+    if (suited) score += 2;
+    const gap = (lo - hi) - 1;
+    if (gap === 1) score -= 1;
+    else if (gap === 2) score -= 2;
+    else if (gap === 3) score -= 4;
+    else if (gap >= 4) score -= 5;
+    if (gap <= 1 && hi >= 3) score += 1;
+    return Math.ceil(score);
+  }
+
+  const TIERS = {
+    premium:  { label: '超强牌', en: 'Premium', color: '#dc2626', tip: '≥12 分：几乎任何位置都应加注或再加注，翻牌前价值极高，极少弃牌。' },
+    strong:   { label: '强牌', en: 'Strong', color: '#ea580c', tip: '9–11 分：前位即可开池加注；遇到他人加注时，10 分以上可考虑跟注。' },
+    good:     { label: '好牌', en: 'Good', color: '#d97706', tip: '7–8 分：主要在中后位开池加注，前位多数情况直接弃牌。' },
+    playable: { label: '可玩 / 投机牌', en: 'Playable', color: '#16a34a', tip: '4–6 分：大多数情况弃牌，仅在合适局面、后位或多人底池中投机。' },
+    weak:     { label: '弱牌', en: 'Weak', color: '#5b6470', tip: '≤3 分：几乎所有情况都应弃牌，避免陷入被动跟注，长期是负期望。' }
+  };
+
+  function tierOf(score) {
+    if (score >= 12) return 'premium';
+    if (score >= 9) return 'strong';
+    if (score >= 7) return 'good';
+    if (score >= 4) return 'playable';
+    return 'weak';
+  }
+
+  // 成牌牌型（9 级，从强到弱）
+  const HAND_CATS = {
+    straight_flush: { name: '同花顺', emoji: '🌟', color: '#dc2626' },
+    four:           { name: '四条',   emoji: '💎', color: '#ef4444' },
+    full_house:     { name: '葫芦',   emoji: '🏠', color: '#f97316' },
+    flush:          { name: '同花',   emoji: '🌸', color: '#d97706' },
+    straight:       { name: '顺子',   emoji: '📏', color: '#65a30d' },
+    three:          { name: '三条',   emoji: '🔺', color: '#10b981' },
+    two_pair:       { name: '两对',   emoji: '👬', color: '#06b6d4' },
+    pair:           { name: '一对',   emoji: '👤', color: '#3b82f6' },
+    high:           { name: '高牌',   emoji: '🃏', color: '#52525b' }
+  };
+  const CAT_RANK = { straight_flush: 8, four: 7, full_house: 6, flush: 5, straight: 4, three: 3, two_pair: 2, pair: 1, high: 0 };
+
+  const NICKNAMES = {
+    'AA': '口袋A / Pocket Rockets（火箭）', 'KK': '口袋K / Cowboys', 'QQ': '口袋Q / Ladies',
+    'JJ': '口袋J / Fishhooks', 'TT': '口袋10 / Dimes', '99': '口袋9 / Gretzky', '88': '口袋8 / Snowmen',
+    '77': '口袋7 / Hockey Sticks', '66': '口袋6 / Route 66', '55': '口袋5 / Nickels', '44': '口袋4 / Sailboats',
+    '33': '口袋3 / Crabs', '22': '口袋2 / Ducks', 'AK': 'Big Slick（大油头）', 'AQ': 'Big Chick / 小 Slick',
+    'AJ': 'Ajax', 'KQ': 'Marriage（联姻）', 'KJ': 'Kojak', 'QJ': 'Oedipus', 'JT': 'TJ Cloutier',
+    'J9': '顺子潜力牌', 'T9': '顺子潜力牌', '98': '顺子潜力牌', '87': '顺子潜力牌', '76': '顺子潜力牌',
+    '65': '顺子潜力牌', '54': '顺子潜力牌', '72': '臭牌 / The Hammer（2-7）'
+  };
+
+  const TABLES = {
+    2: [
+      { key: 'btn', label: '庄位 BTN / SB', pct: 85 },
+      { key: 'bb',  label: '大盲 BB', pct: 80, defend: true }
+    ],
+    3: [
+      { key: 'btn', label: '庄位 BTN', pct: 55 },
+      { key: 'sb',  label: '小盲 SB', pct: 48 },
+      { key: 'bb',  label: '大盲 BB', pct: 60, defend: true }
+    ],
+    6: [
+      { key: 'utg', label: '枪口位 UTG', pct: 14 },
+      { key: 'hj',  label: '中位 HJ', pct: 20 },
+      { key: 'co',  label: '关煞 CO', pct: 28 },
+      { key: 'btn', label: '庄位 BTN', pct: 45 },
+      { key: 'sb',  label: '小盲 SB', pct: 40 },
+      { key: 'bb',  label: '大盲 BB', pct: 50, defend: true }
+    ],
+    9: [
+      { key: 'utg', label: '枪口位 UTG', pct: 10 },
+      { key: 'utg1',label: 'UTG+1', pct: 12 },
+      { key: 'utg2',label: 'UTG+2', pct: 14 },
+      { key: 'lj',  label: '中位 LJ', pct: 16 },
+      { key: 'hj',  label: '中位 HJ', pct: 20 },
+      { key: 'co',  label: '关煞 CO', pct: 26 },
+      { key: 'btn', label: '庄位 BTN', pct: 42 },
+      { key: 'sb',  label: '小盲 SB', pct: 36 },
+      { key: 'bb',  label: '大盲 BB', pct: 45, defend: true }
+    ]
+  };
+
+  // ---- 牌型评估 ----
+  function isConsec(v) { for (let i = 0; i < v.length - 1; i++) if (v[i] - v[i + 1] !== 1) return false; return true; }
+  function detectStraight(vals) {
+    if (isConsec(vals)) return { high: vals[0] };
+    if (vals.includes(14) && vals.includes(5) && vals.includes(4) && vals.includes(3) && vals.includes(2)) return { high: 5 };
+    return null;
+  }
+  function evaluateHand(cards) {
+    const vals = cards.map(c => RANK_VAL[c.rank]);
+    const rankCount = {};
+    vals.forEach(v => rankCount[v] = (rankCount[v] || 0) + 1);
+    const counts = Object.entries(rankCount).map(([v, c]) => ({ v: +v, c })).sort((a, b) => b.c - a.c || b.v - a.v);
+    const suitCount = {};
+    cards.forEach(c => suitCount[c.suit] = (suitCount[c.suit] || 0) + 1);
+    const isFlush = Object.values(suitCount).some(c => c >= 5);
+    const unique = [...new Set(vals)].sort((a, b) => b - a);
+    const straight = unique.length === 5 ? detectStraight(unique) : null;
+    if (isFlush && straight) return { cat: 'straight_flush', high: straight.high };
+    if (counts[0].c === 4) return { cat: 'four', quad: counts[0].v, kicker: counts[1].v };
+    if (counts[0].c === 3 && counts[1].c === 2) return { cat: 'full_house', trip: counts[0].v, pair: counts[1].v };
+    if (isFlush) return { cat: 'flush', high: Math.max(...vals) };
+    if (straight) return { cat: 'straight', high: straight.high };
+    if (counts[0].c === 3) return { cat: 'three', trip: counts[0].v };
+    if (counts[0].c === 2 && counts[1].c === 2) return { cat: 'two_pair', high: counts[0].v, low: counts[1].v, kicker: counts[2].v };
+    if (counts[0].c === 2) return { cat: 'pair', pair: counts[0].v };
+    return { cat: 'high', high: counts[0].v };
+  }
+  // n 张牌（5~7 张）里取最强 5 张的牌型类别
+  function bestHandCat(cards) {
+    const n = cards.length;
+    if (n < 5) return null;
+    let best = null, bestRank = -1;
+    for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) for (let c = b + 1; c < n; c++)
+      for (let d = c + 1; d < n; d++) for (let e = d + 1; e < n; e++) {
+        const r = evaluateHand([cards[a], cards[b], cards[c], cards[d], cards[e]]);
+        const cr = CAT_RANK[r.cat];
+        if (cr > bestRank) { bestRank = cr; best = r.cat; }
+      }
+    return best;
+  }
+
+  // 起手牌 -> 所有具体两张牌组合（rank+suit key）
+  function holeCardCombos(hand) {
+    const r1 = hand.base[0], r2 = hand.base[1];
+    if (hand.pair) {
+      const cs = [];
+      for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) cs.push([r1 + SUIT_CHARS[i], r2 + SUIT_CHARS[j]]);
+      return cs;
+    }
+    if (hand.suited) return SUIT_CHARS.map(s => [r1 + s, r2 + s]);
+    const cs = [];
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (i !== j) cs.push([r1 + SUIT_CHARS[i], r2 + SUIT_CHARS[j]]);
+    return cs;
+  }
+
+  // 某起手牌 + 公共牌 能成的最佳牌型类别（考虑所有花色组合，排除冲突）
+  function handBestCat(hand, boardKeys) {
+    const boardSet = new Set(boardKeys);
+    const combos = holeCardCombos(hand).filter(c => !boardSet.has(c[0]) && !boardSet.has(c[1]));
+    let best = null, bestRank = -1;
+    for (const c of combos) {
+      const cards = [...c, ...boardKeys].map(k => ({ rank: k[0], suit: k[1] }));
+      const cat = bestHandCat(cards);
+      if (cat && CAT_RANK[cat] > bestRank) { bestRank = CAT_RANK[cat]; best = cat; }
+    }
+    return best;
+  }
+
+  function displayRank(r) { return r === 'T' ? '10' : r; }
+
+  // ---- 构建 169 手牌数据 ----
+  const hands = [];
+  const cellData = {};
+  for (let r = 0; r < 13; r++) {
+    for (let c = 0; c < 13; c++) {
+      let hand;
+      if (r === c) hand = { r, c, pair: true, suited: false, base: RANKS[r] + RANKS[r], key: RANKS[r] + RANKS[r] };
+      else if (r < c) hand = { r, c, pair: false, suited: true, base: RANKS[r] + RANKS[c], key: RANKS[r] + RANKS[c] + 's' };
+      else hand = { r, c, pair: false, suited: false, base: RANKS[c] + RANKS[r], key: RANKS[c] + RANKS[r] + 'o' };
+      hand.score = chenScore(r, c, hand.suited);
+      hand.tier = tierOf(hand.score);
+      hands.push(hand);
+      cellData[r + '-' + c] = hand;
+    }
+  }
+
+  const sorted = [...hands].sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const ia = RANKS.indexOf(a.base[0]), ib = RANKS.indexOf(b.base[0]);
+    if (ia !== ib) return ia - ib;
+    return (b.suited ? 1 : 0) - (a.suited ? 1 : 0);
+  });
+  const rankOf = {};
+  sorted.forEach((h, i) => { rankOf[h.key] = i + 1; });
+
+  const tierCounts = {};
+  hands.forEach(h => { tierCounts[h.tier] = (tierCounts[h.tier] || 0) + 1; });
+
+  function rankThreshold(pct) { return Math.max(1, Math.round(169 * pct / 100)); }
+
+  const state = { players: 6, position: null, query: '', selected: null };
+  const boardState = []; // 已选公共牌 key 数组，最多 5
+
+  // ---- 渲染网格 ----
+  const gridEl = document.getElementById('grid');
+  const cellEls = {};
+
+  function cellHTML(hand) {
+    const color = TIERS[hand.tier].color;
+    const main = hand.pair
+      ? '<span class="rl">' + hand.base + '</span>'
+      : '<span class="rl">' + hand.base + '<span class="sx">' + (hand.suited ? 's' : 'o') + '</span></span>';
+    return '<div class="cell" data-key="' + hand.key + '" data-pos="' + hand.r + '-' + hand.c + '" style="--c:' + color + '" title="' + hand.key + '（陈氏 ' + hand.score + ' 分）">' +
+      main + '<span class="score">' + hand.score + '</span></div>';
+  }
+
+  let html = '<div class="corner"></div>';
+  for (let c = 0; c < 13; c++) html += '<div class="lbl col">' + RANKS[c] + '</div>';
+  for (let r = 0; r < 13; r++) {
+    html += '<div class="lbl row">' + RANKS[r] + '</div>';
+    for (let c = 0; c < 13; c++) html += cellHTML(cellData[r + '-' + c]);
+  }
+  gridEl.innerHTML = html;
+  gridEl.querySelectorAll('.cell').forEach(el => {
+    const hand = cellData[el.dataset.pos];
+    cellEls[hand.key] = el;
+    el.addEventListener('click', () => selectHand(hand.key));
+  });
+
+  // ---- 图例 ----
+  const legendEl = document.getElementById('legend');
+  function renderLegend(hasBoard) {
+    if (hasBoard) {
+      legendEl.innerHTML = Object.entries(HAND_CATS).map(([k, m]) => {
+        const label = k === 'high' ? '不建议玩（高牌）' : m.name;
+        return '<div class="lg"><span class="sw" style="background:' + m.color + '"></span><b>' + label + '</b></div>';
+      }).join('');
+    } else {
+      legendEl.innerHTML = Object.keys(TIERS).map(t => {
+        const m = TIERS[t];
+        return '<div class="lg"><span class="sw" style="background:' + m.color + '"></span><b>' + m.label + '</b><span>' + m.en + '</span><span class="n">(' + tierCounts[t] + ')</span></div>';
+      }).join('');
+    }
+  }
+
+  // ---- 位置按钮 ----
+  function currentTable() { return TABLES[state.players]; }
+  function currentPos() { return currentTable().find(p => p.key === state.position); }
+  function renderPositions(keepSelected) {
+    const table = TABLES[state.players];
+    if (!keepSelected || !table.some(p => p.key === state.position)) state.position = table[0].key;
+    const row = document.getElementById('pos-row');
+    row.innerHTML = table.map(p =>
+      '<button class="chip' + (p.key === state.position ? ' active' : '') + '" data-pos="' + p.key + '" type="button">' + p.label + '</button>'
+    ).join('');
+  }
+
+  // ---- 公共牌 ----
+  const BOARD_SLOT_LABELS = ['翻牌 1', '翻牌 2', '翻牌 3', '转牌', '河牌'];
+
+  function renderBoardSlots() {
+    const el = document.getElementById('bp-slots');
+    let html = '';
+    for (let i = 0; i < 5; i++) {
+      const key = boardState[i] || '';
+      if (key) {
+        const red = key[1] === '♥' || key[1] === '♦';
+        html += '<div class="bp-slot filled ' + (red ? 'red' : 'black') + '" data-idx="' + i + '"><span class="pr">' + displayRank(key[0]) + '</span><span class="ps">' + key[1] + '</span><span class="sl">' + BOARD_SLOT_LABELS[i] + '</span></div>';
+      } else {
+        html += '<div class="bp-slot empty" data-idx="' + i + '"><span class="q">?</span><span class="sl">' + BOARD_SLOT_LABELS[i] + '</span></div>';
+      }
+    }
+    el.innerHTML = html;
+    el.querySelectorAll('.bp-slot').forEach(s => s.addEventListener('click', () => {
+      const i = +s.dataset.idx;
+      if (boardState[i]) {
+        boardState.splice(i, 1);
+        renderBoardSlots(); renderPicker(); refreshBoardMode();
+      }
+    }));
+  }
+
+  function renderPicker() {
+    const el = document.getElementById('bp-picker');
+    const set = new Set(boardState);
+    let html = '';
+    for (const s of SUIT_CHARS) {
+      const red = s === '♥' || s === '♦';
+      html += '<div class="bp-suit' + (red ? ' red' : '') + '">' + s + '</div>';
+      for (const r of RANKS) {
+        const key = r + s;
+        const used = set.has(key);
+        html += '<div class="bp-card ' + (red ? 'red' : 'black') + (used ? ' used' : '') + '" data-key="' + key + '"><span class="pr">' + displayRank(r) + '</span><span class="ps">' + s + '</span></div>';
+      }
+    }
+    el.innerHTML = html;
+    el.querySelectorAll('.bp-card').forEach(c => c.addEventListener('click', () => {
+      const key = c.dataset.key;
+      if (set.has(key)) return;
+      if (boardState.length >= 5) return;
+      boardState.push(key);
+      renderBoardSlots(); renderPicker(); refreshBoardMode();
+    }));
+  }
+
+  // ---- 高亮更新 ----
+  function refreshBoardMode() {
+    const hasBoard = boardState.length >= 3;
+    hands.forEach(h => {
+      const el = cellEls[h.key];
+      let color;
+      if (hasBoard) {
+        const cat = handBestCat(h, boardState);
+        color = cat ? HAND_CATS[cat].color : '#1f2937';
+      } else {
+        color = TIERS[h.tier].color;
+      }
+      el.style.setProperty('--c', color);
+    });
+    renderLegend(hasBoard);
+    updateHighlights();
+    if (state.selected) selectHand(state.selected);
+  }
+
+  function updateHighlights() {
+    const q = state.query;
+    const hasBoard = boardState.length >= 3;
+    const pos = currentPos();
+    const thr = rankThreshold(pos.pct);
+    let inCount = 0;
+
+    hands.forEach(h => {
+      const el = cellEls[h.key];
+      const inRange = rankOf[h.key] <= thr;
+      if (inRange) inCount++;
+      const match = q ? h.key.includes(q) : true;
+      el.classList.toggle('dim', !hasBoard && !inRange);
+      el.classList.toggle('fade', !!(q && !match));
+      el.classList.toggle('match', !!(q && match));
+    });
+
+    const info = document.getElementById('range-info');
+    if (hasBoard) {
+      info.innerHTML = '<b>公共牌模式</b>：格子颜色 = 该起手牌 + 你的公共牌能成的最佳牌型（颜色越红越强）。' + (boardState.length < 5 ? '当前 ' + boardState.length + ' 张，可继续补到 5 张。' : '');
+    } else if (boardState.length > 0) {
+      info.innerHTML = '<b>公共牌</b>：已选 ' + boardState.length + ' 张，<b>再选 ' + (3 - boardState.length) + ' 张</b>（凑满翻牌）后牌表会切换成牌强度高亮。';
+    } else if (pos.defend) {
+      const minScore = sorted[thr - 1].score;
+      info.innerHTML = '<b>' + state.players + ' 人桌 · ' + pos.label + '</b>：通常不开池，显示约前 <b>' + pos.pct + '%</b>（约 <b>≥' + minScore + ' 分</b>）的可防守参考范围，共高亮 <b>' + inCount + '</b> 手。';
+    } else {
+      const minScore = sorted[thr - 1].score;
+      info.innerHTML = '<b>' + state.players + ' 人桌 · ' + pos.label + '</b>：建议开池约前 <b>' + pos.pct + '%</b> 的牌力（约 <b>≥' + minScore + ' 分</b>），共高亮 <b>' + inCount + '</b> 手（示例范围，仅供参考）。';
+    }
+  }
+
+  // ---- 详情面板 ----
+  function renderCard(rank, suit) {
+    const red = suit === '♥' || suit === '♦';
+    return '<span class="card ' + (red ? 'red' : 'black') + '"><span class="cr">' + displayRank(rank) + '</span><span class="cs">' + suit + '</span></span>';
+  }
+  function cardsFor(hand) {
+    if (hand.pair) return renderCard(hand.base[0], '♠') + renderCard(hand.base[1], '♥');
+    if (hand.suited) return renderCard(hand.base[0], '♠') + renderCard(hand.base[1], '♠');
+    return renderCard(hand.base[0], '♠') + renderCard(hand.base[1], '♦');
+  }
+  function handTypeLabel(hand) {
+    if (hand.pair) return '口袋对子';
+    return hand.suited ? '同花' : '不同花';
+  }
+
+  function selectHand(key) {
+    state.selected = key;
+    const hand = hands.find(h => h.key === key);
+    if (!hand) return;
+
+    Object.values(cellEls).forEach(el => el.classList.remove('selected'));
+    cellEls[key].classList.add('selected');
+
+    const tier = TIERS[hand.tier];
+    const rank = rankOf[hand.key];
+    const pos = currentPos();
+    const inRange = rank <= rankThreshold(pos.pct);
+
+    // 公共牌成牌信息
+    let boardHtml = '';
+    if (boardState.length >= 3) {
+      const cat = handBestCat(hand, boardState);
+      if (cat) {
+        const m = HAND_CATS[cat];
+        const catLabel = cat === 'high' ? '不建议玩（仅高牌）' : m.name;
+        boardHtml = '<div class="d-board"><div class="s-title">配合当前公共牌可成</div><div class="d-board-name">' + m.emoji + ' ' + catLabel + '</div></div>';
+      } else {
+        boardHtml = '<div class="d-board"><div class="s-title">配合当前公共牌</div><div class="d-board-name">牌已被占用，无法成立</div></div>';
+      }
+    }
+
+    const sitLabel = state.players + ' 人桌 · ' + pos.label;
+    let sitChip, sitNote;
+    if (inRange) {
+      sitChip = '<span class="s-chip on">' + (pos.defend ? '✅ 在防守范围内' : '✅ 建议开池（范围内）') + '</span>';
+      sitNote = pos.defend ? '可考虑防守大盲，视加注大小与对手而定。' : '属于该位置的开池范围，值得主动加注入池。';
+    } else {
+      sitChip = '<span class="s-chip off">' + (pos.defend ? '❌ 防守范围外' : '❌ 开池范围外') + '</span>';
+      sitNote = '当前位置建议弃牌，长期避免负期望。';
+    }
+
+    const nick = NICKNAMES[hand.base] ? '<span class="nick">' + NICKNAMES[hand.base] + '</span>' : '';
+
+    document.getElementById('hand-detail').innerHTML =
+      '<div class="d-head">' +
+        '<div class="d-cards">' + cardsFor(hand) + '</div>' +
+        '<div class="d-title"><h2>' + hand.key + '</h2><div class="key">' + handTypeLabel(hand) + '</div></div>' +
+      '</div>' +
+      '<div class="d-meta">' +
+        '<div class="stat"><div class="k">陈氏牌力评分</div><div class="v">' + hand.score + ' / 20</div></div>' +
+        '<div class="stat"><div class="k">强度等级</div><div class="v small"><span class="badge" style="background:' + tier.color + '">' + tier.label + '</span></div></div>' +
+        '<div class="stat"><div class="k">综合排名</div><div class="v small">第 ' + rank + ' / 169</div></div>' +
+      '</div>' +
+      boardHtml +
+      '<div class="d-situation">' +
+        '<div class="s-title">当前局面</div>' +
+        '<div class="s-head">' + sitLabel + '</div>' + sitChip +
+        '<div class="s-title" style="margin-top:6px">' + sitNote + '</div>' +
+      '</div>' +
+      '<div class="d-tip">' + nick + tier.tip + '</div>' +
+      '<div class="d-actions"><button class="btn primary" id="btn-another">🎲 再来一手</button></div>';
+
+    document.getElementById('btn-another').addEventListener('click', randomHand);
+  }
+
+  function randomHand() {
+    const h = hands[Math.floor(Math.random() * hands.length)];
+    selectHand(h.key);
+    const el = cellEls[h.key];
+    if (el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  // ---- 事件 ----
+  document.getElementById('search').addEventListener('input', e => {
+    let q = e.target.value.trim().toUpperCase().replace(/10/g, 'T');
+    state.query = q;
+    updateHighlights();
+  });
+
+  document.getElementById('players-row').addEventListener('click', e => {
+    const btn = e.target.closest('.chip[data-players]');
+    if (!btn) return;
+    state.players = parseInt(btn.dataset.players, 10);
+    document.querySelectorAll('#players-row .chip').forEach(b => b.classList.toggle('active', b === btn));
+    renderPositions(false);
+    updateHighlights();
+  });
+
+  document.getElementById('pos-row').addEventListener('click', e => {
+    const btn = e.target.closest('.chip[data-pos]');
+    if (!btn) return;
+    state.position = btn.dataset.pos;
+    document.querySelectorAll('#pos-row .chip').forEach(b => b.classList.toggle('active', b === btn));
+    updateHighlights();
+  });
+
+  document.getElementById('btn-random').addEventListener('click', randomHand);
+
+  document.getElementById('btn-clear-board').addEventListener('click', () => {
+    boardState.length = 0;
+    renderBoardSlots();
+    renderPicker();
+    refreshBoardMode();
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    state.query = '';
+    state.players = 6;
+    state.position = null;
+    state.selected = null;
+    boardState.length = 0;
+    document.getElementById('search').value = '';
+    document.querySelectorAll('#players-row .chip').forEach(b => b.classList.toggle('active', b.dataset.players === '6'));
+    renderPositions(false);
+    renderBoardSlots();
+    renderPicker();
+    Object.values(cellEls).forEach(el => el.classList.remove('selected', 'match', 'fade', 'dim'));
+    refreshBoardMode();
+    document.getElementById('hand-detail').innerHTML =
+      '<div class="placeholder"><span class="big">🂠</span>点击牌表任意格子查看详情。</div>';
+  });
+
+  // ---- 初始化 ----
+  renderPositions(false);
+  renderBoardSlots();
+  renderPicker();
+  renderLegend(false);
+  updateHighlights();
+})();
+</script>
+</body>
+</html>
